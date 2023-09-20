@@ -1,0 +1,85 @@
+---
+title: "Tidy Data"
+format: html
+editor: visual
+---
+
+```{r}
+library(tidyverse)
+library(dplyr)
+```
+
+#### Three interrelated rules which make a dataset tidy:
+
+-   each variable must have its own column
+
+-   each observation must have its own row
+
+-   each value must have its own cell
+
+```{r}
+table4a
+```
+
+To tidy a dataset like this, we need to pivot the offending columns into a pair of variables. To describe what operation we need three parameters:
+
+-   the set of columns whose names are values not variables. In this example, those columns 2000 and 1999
+
+```{r}
+table4a_tidy <- table4a %>% 
+  pivot_longer(c(`1999`,`2000`), names_to = "year", values_to = "cases")
+table4a_tidy
+```
+
+```{r}
+table_4b_tidy <- table4b %>% 
+  pivot_longer(c(`1999`,`2000`), names_to = "year", values_to = 'population')
+table_4b_tidy
+```
+
+To combine the tidied version of table4a and table4b into a single tibble, we need to use dplyr::left_join() which you'll learn about in relational data
+
+```{r}
+left_join(table_4b_tidy,table4a_tidy, by = join_by(country, year))
+```
+
+```{r}
+#who dataset contains tuberculosis cases broken down by year, country, gender, age, and diagnosis method. We need to gather all the columns from new_sp_m014 to newrel_f65. using values_drop_na so we can focus on the values that are present 
+
+
+who1 <- who %>% 
+  pivot_longer(
+    cols = new_sp_m014:newrel_f65,
+    names_to = "key",
+    values_to = "cases",
+    values_drop_na = TRUE
+  )
+who1
+
+#making a minor fix to the format of the column names, unfortunately the names are slightly inconsistent because instead of newrel we have newre1
+
+who2 <- who1 %>% 
+  mutate(key = stringr::str_replace(key, "newrel","new_rel"))
+
+who2 
+
+```
+
+```{r}
+who3 <- who2 %>% 
+  separate(key, c("new","type","sexage"), sep = "_")
+who3
+```
+
+```{r}
+#dropping the new column because it is constant in the dataset. also dropping iso2 and iso3 since they're redundant
+who4 <- who3 %>% 
+  select(-new, -iso2, -iso3)
+```
+
+```{r}
+#separating sexage into sex and age by splitting after the first character
+who5 <- who4 %>% 
+  separate(sexage, c("sex","age"), sep = 1)
+who5
+```
